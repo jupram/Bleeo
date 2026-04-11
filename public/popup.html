@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bleeo</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <p class="eyebrow">Mental-space filter</p>
+        <h1>Bleeo</h1>
+        <p class="lede">Blur sensationalized language before it hijacks your attention.</p>
+      </section>
+
+      <section class="panel">
+        <label class="toggle">
+          <span>Extension enabled</span>
+          <input id="global-enabled" type="checkbox" />
+        </label>
+
+        <label class="toggle">
+          <span id="site-label">Filtering on this site</span>
+          <input id="site-enabled" type="checkbox" />
+        </label>
+
+        <label class="field">
+          <span>Sensitivity</span>
+          <select id="sensitivity">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+
+        <div class="status">
+          <span class="status-label">Mode</span>
+          <strong id="mode">Loading</strong>
+        </div>
+
+        <button id="open-options" class="button" type="button">Open settings</button>
+      </section>
+    </main>
+
+    <script type="module" src="popup.js"></script>
+  </body>
+</html>

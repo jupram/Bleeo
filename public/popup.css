@@ -1,0 +1,100 @@
+:root {
+  color-scheme: light;
+  --paper: #f7f1e7;
+  --paper-deep: #ecdfcf;
+  --ink: #29231d;
+  --accent: #a55f2a;
+  --accent-soft: #d69b69;
+  --line: rgba(41, 35, 29, 0.12);
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background:
+    radial-gradient(circle at top right, rgba(214, 155, 105, 0.26), transparent 42%),
+    linear-gradient(180deg, #f8f4ec, var(--paper));
+  color: var(--ink);
+  font: 16px/1.45 Georgia, "Times New Roman", serif;
+}
+
+.shell {
+  padding: 1rem;
+}
+
+.hero {
+  padding: 0.3rem 0 1rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.3rem;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7b5a39;
+}
+
+.hero h1 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+
+.lede {
+  margin: 0.35rem 0 0;
+  color: rgba(41, 35, 29, 0.75);
+}
+
+.panel {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem;
+  background: rgba(255, 252, 247, 0.82);
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  box-shadow: 0 12px 30px rgba(84, 62, 43, 0.08);
+}
+
+.toggle,
+.field,
+.status {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.toggle {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+select,
+button,
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+select,
+.button {
+  border: 1px solid rgba(82, 58, 35, 0.18);
+  border-radius: 0.75rem;
+  background: white;
+  font: inherit;
+}
+
+select {
+  padding: 0.55rem 0.65rem;
+}
+
+.button {
+  padding: 0.7rem 0.9rem;
+  color: white;
+  background: linear-gradient(180deg, var(--accent-soft), var(--accent));
+  cursor: pointer;
+}
+
+.button:hover {
+  filter: brightness(1.03);
+}
+
+.status-label {
+  color: rgba(41, 35, 29, 0.7);
+}

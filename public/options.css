@@ -1,0 +1,146 @@
+:root {
+  color-scheme: light;
+  --paper: #f3ede3;
+  --panel: rgba(255, 250, 243, 0.92);
+  --ink: #241d16;
+  --muted: rgba(36, 29, 22, 0.72);
+  --line: rgba(36, 29, 22, 0.1);
+  --accent: #89512a;
+  --accent-soft: #dcb58f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(220, 181, 143, 0.28), transparent 28%),
+    linear-gradient(180deg, #f8f3ea, var(--paper));
+  color: var(--ink);
+  font: 16px/1.5 Georgia, "Times New Roman", serif;
+}
+
+.page {
+  width: min(960px, calc(100% - 2rem));
+  margin: 0 auto;
+  padding: 2rem 0 3rem;
+}
+
+.masthead {
+  margin-bottom: 1.5rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.76rem;
+  color: #7f5834;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+.card {
+  margin-bottom: 1rem;
+  padding: 1.2rem;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 1.1rem;
+  box-shadow: 0 14px 36px rgba(68, 49, 33, 0.08);
+}
+
+.controls {
+  display: grid;
+  gap: 1rem;
+}
+
+.toggle,
+.field,
+.status {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.toggle {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+button,
+select,
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+button,
+select {
+  font: inherit;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(82, 62, 42, 0.16);
+  background: white;
+}
+
+button {
+  padding: 0.65rem 0.9rem;
+  cursor: pointer;
+}
+
+select {
+  padding: 0.55rem 0.7rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: start;
+  gap: 1rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.empty {
+  display: none;
+  margin: 1rem 0 0;
+  color: var(--muted);
+}
+
+.empty[data-visible="true"] {
+  display: block;
+}
+
+.pill {
+  display: inline-block;
+  padding: 0.18rem 0.55rem;
+  border-radius: 999px;
+  background: rgba(220, 181, 143, 0.26);
+  color: #664122;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 640px) {
+  .page {
+    width: min(100%, calc(100% - 1rem));
+    padding-top: 1rem;
+  }
+
+  .section-header {
+    flex-direction: column;
+  }
+}

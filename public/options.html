@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Bleeo Settings</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="masthead">
+        <p class="eyebrow">Bleeo</p>
+        <h1>Filter settings</h1>
+        <p>Keep the filter calm, local, and under your control.</p>
+      </section>
+
+      <section class="card controls">
+        <label class="toggle">
+          <span>Enable extension</span>
+          <input id="enabled" type="checkbox" />
+        </label>
+
+        <label class="field">
+          <span>Sensitivity</span>
+          <select id="sensitivity">
+            <option value="low">Low</option>
+            <option value="medium">Medium</option>
+            <option value="high">High</option>
+          </select>
+        </label>
+
+        <label class="toggle">
+          <span>Show filter markers</span>
+          <input id="markers" type="checkbox" />
+        </label>
+
+        <div class="status">
+          <span>Classifier mode</span>
+          <strong id="mode">Loading</strong>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="section-header">
+          <div>
+            <h2>Site overrides</h2>
+            <p>Use overrides to explicitly enable or disable filtering per hostname.</p>
+          </div>
+          <button id="refresh" type="button">Refresh</button>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Hostname</th>
+              <th>State</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="site-overrides"></tbody>
+        </table>
+        <p id="empty-state" class="empty">No site overrides yet.</p>
+      </section>
+
+      <section class="card note">
+        <h2>Privacy</h2>
+        <p>All filtering happens locally in the browser. Bleeo does not send article or feed text to a server.</p>
+      </section>
+    </main>
+
+    <script type="module" src="options.js"></script>
+  </body>
+</html>
