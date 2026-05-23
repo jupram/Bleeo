@@ -48,6 +48,12 @@ describe("heuristics", () => {
     expect(result.reasonCode).not.toMatch(/^social-/);
   });
 
+  it("does not match alarm words inside ordinary words", () => {
+    const result = scoreSensationalism("Community courage grows after students organize a calm weekend fundraiser.");
+    expect(result.reasonCode).toBe("neutral");
+    expect(result.score).toBe(0);
+  });
+
   it("does not auto-filter mixed-case social posts with only a few uppercase words", () => {
     const results = classifyCandidates(
       [{ id: "a", text: "this guy vibe coded an AI SURVIVAL APP that works COMPLETELY OFFLINE" }],

@@ -74,6 +74,14 @@ function clampScore(score: number): number {
   return Math.max(0, Math.min(1, score));
 }
 
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function matchesWholeWord(text: string, word: string): boolean {
+  return new RegExp(`\\b${escapeRegExp(word)}\\b`, "i").test(text);
+}
+
 function uppercaseRatio(text: string): number {
   const letters = Array.from(text).filter((char) => /[a-z]/i.test(char));
   if (!letters.length) {
@@ -151,7 +159,7 @@ export function scoreSensationalism(text: string, hostname?: string): { score: n
     };
   }
 
-  const alarmMatches = ALARM_WORDS.filter((word) => lower.includes(word));
+  const alarmMatches = ALARM_WORDS.filter((word) => matchesWholeWord(normalized, word));
   if (alarmMatches.length) {
     score += Math.min(0.4, alarmMatches.length * 0.12);
     reasonCode = "alarmist-language";
