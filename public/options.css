@@ -1,12 +1,12 @@
 :root {
   color-scheme: light;
-  --paper: #f3ede3;
-  --panel: rgba(255, 250, 243, 0.92);
-  --ink: #241d16;
-  --muted: rgba(36, 29, 22, 0.72);
-  --line: rgba(36, 29, 22, 0.1);
-  --accent: #89512a;
-  --accent-soft: #dcb58f;
+  --paper: #f8fafc;
+  --panel: #ffffff;
+  --ink: #0f172a;
+  --muted: #475569;
+  --line: rgba(15, 23, 42, 0.12);
+  --accent: #0e7490;
+  --accent-soft: #cffafe;
 }
 
 * {
@@ -16,11 +16,9 @@
 body {
   margin: 0;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top left, rgba(220, 181, 143, 0.28), transparent 28%),
-    linear-gradient(180deg, #f8f3ea, var(--paper));
+  background: var(--paper);
   color: var(--ink);
-  font: 16px/1.5 Georgia, "Times New Roman", serif;
+  font: 15px/1.5 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
 .page {
@@ -36,9 +34,10 @@ body {
 .eyebrow {
   margin: 0 0 0.4rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0;
+  font-weight: 700;
   font-size: 0.76rem;
-  color: #7f5834;
+  color: var(--accent);
 }
 
 h1,
@@ -52,8 +51,8 @@ p {
   padding: 1.2rem;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 1.1rem;
-  box-shadow: 0 14px 36px rgba(68, 49, 33, 0.08);
+  border-radius: 0.5rem;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
 }
 
 .controls {
@@ -82,18 +81,27 @@ input[type="checkbox"] {
 button,
 select {
   font: inherit;
-  border-radius: 0.8rem;
-  border: 1px solid rgba(82, 62, 42, 0.16);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(15, 23, 42, 0.16);
   background: white;
 }
 
 button {
   padding: 0.65rem 0.9rem;
   cursor: pointer;
+  font-weight: 700;
+  color: #0f172a;
 }
 
 select {
   padding: 0.55rem 0.7rem;
+}
+
+button:focus-visible,
+select:focus-visible,
+input:focus-visible {
+  outline: 3px solid rgba(14, 116, 144, 0.28);
+  outline-offset: 2px;
 }
 
 .section-header {
@@ -128,10 +136,11 @@ td {
 .pill {
   display: inline-block;
   padding: 0.18rem 0.55rem;
-  border-radius: 999px;
-  background: rgba(220, 181, 143, 0.26);
-  color: #664122;
+  border-radius: 0.5rem;
+  background: var(--accent-soft);
+  color: #164e63;
   font-size: 0.82rem;
+  font-weight: 700;
 }
 
 @media (max-width: 640px) {
