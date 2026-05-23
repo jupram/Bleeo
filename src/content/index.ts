@@ -11,6 +11,7 @@ const processedNodes = new WeakSet<Text>();
 const resultCache = new Map<string, ClassificationResult>();
 let currentSettings: EffectiveSettings = getEffectiveSettings(DEFAULT_SETTINGS, window.location.hostname);
 let scanTimer: number | null = null;
+let snoozeTimer: number | null = null;
 let observer: MutationObserver | null = null;
 let signalElement: HTMLDivElement | null = null;
 let scanInFlight = false;
@@ -236,6 +237,8 @@ function getSignalElement(): HTMLDivElement {
   signalElement = document.createElement("div");
   signalElement.className = "bleeo-signal";
   signalElement.dataset.state = "idle";
+  signalElement.setAttribute("role", "status");
+  signalElement.setAttribute("aria-live", "polite");
   signalElement.hidden = true;
   document.documentElement.appendChild(signalElement);
   return signalElement;
@@ -434,6 +437,35 @@ function scheduleScan() {
   }, SCAN_DEBOUNCE_MS);
 }
 
+function clearSnoozeTimer() {
+  if (snoozeTimer !== null) {
+    window.clearTimeout(snoozeTimer);
+    snoozeTimer = null;
+  }
+}
+
+function scheduleSnoozeExpiry() {
+  clearSnoozeTimer();
+  if (!currentSettings.siteSnoozedUntil) {
+    return;
+  }
+
+  const delay = Math.max(0, currentSettings.siteSnoozedUntil - Date.now() + 250);
+  snoozeTimer = window.setTimeout(() => {
+    snoozeTimer = null;
+    currentSettings = getEffectiveSettings(mergeSettings(currentSettings), window.location.hostname);
+
+    if (!currentSettings.siteEnabled) {
+      scheduleSnoozeExpiry();
+      return;
+    }
+
+    startObserver();
+    scheduleScan();
+    void reportFilteredCount();
+  }, delay);
+}
+
 function startObserver() {
   observer?.disconnect();
   observer = new MutationObserver(() => {
@@ -473,13 +505,10 @@ async function loadSettings() {
   }
 }
 
-chrome.runtime.onMessage.addListener((message: Message) => {
-  if (message.type !== "SETTINGS_UPDATED") {
-    return;
-  }
-
-  const merged = mergeSettings(message.settings as Settings);
+function applySettingsUpdate(settings: Settings) {
+  const merged = mergeSettings(settings);
   currentSettings = getEffectiveSettings(merged, window.location.hostname);
+  scheduleSnoozeExpiry();
   updateMarkerState();
 
   if (!currentSettings.siteEnabled) {
@@ -495,11 +524,32 @@ chrome.runtime.onMessage.addListener((message: Message) => {
 
   startObserver();
   scheduleScan();
+}
+
+chrome.runtime.onMessage.addListener((message: Message) => {
+  if (message.type !== "SETTINGS_UPDATED") {
+    return;
+  }
+
+  applySettingsUpdate(message.settings as Settings);
+});
+
+chrome.storage.onChanged.addListener((changes, areaName) => {
+  if (areaName !== "sync") {
+    return;
+  }
+
+  const changedSettings = Object.fromEntries(
+    Object.entries(changes).map(([key, change]) => [key, change.newValue])
+  ) as Partial<Settings>;
+
+  applySettingsUpdate({ ...currentSettings, ...changedSettings });
 });
 
 void (async () => {
   await loadSettings();
   if (!currentSettings.siteEnabled) {
+    scheduleSnoozeExpiry();
     await reportFilteredCount();
     return;
   }

@@ -25,6 +25,17 @@ describe("settings", () => {
     expect(overridden.siteEnabled).toBe(false);
   });
 
+  it("pauses filtering for a snoozed site", () => {
+    const snoozed = getEffectiveSettings(
+      mergeSettings({ siteSnoozes: { "news.google.com": Date.now() + 60_000 } }),
+      "news.google.com"
+    );
+
+    expect(snoozed.siteSnoozed).toBe(true);
+    expect(snoozed.siteEnabled).toBe(false);
+    expect(snoozed.siteSnoozedUntil).toBeTypeOf("number");
+  });
+
   it("sanitizes invalid stored settings", () => {
     const sanitized = sanitizeSettings({
       enabled: "yes",
@@ -35,6 +46,12 @@ describe("settings", () => {
         " Example.COM ": true,
         "bad host name": true,
         "news.google.com": "nope"
+      },
+      siteSnoozes: {
+        " Example.COM ": Date.now() + 60_000,
+        "expired.com": Date.now() - 60_000,
+        "bad host name": Date.now() + 60_000,
+        "not-a-number.com": "tomorrow"
       }
     });
 
@@ -43,5 +60,6 @@ describe("settings", () => {
     expect(sanitized.showMarkers).toBe(false);
     expect(sanitized.modelMode).toBe(DEFAULT_SETTINGS.modelMode);
     expect(sanitized.siteOverrides).toEqual({ "example.com": true });
+    expect(Object.keys(sanitized.siteSnoozes)).toEqual(["example.com"]);
   });
 });

@@ -54,11 +54,7 @@ Install dependencies:
 
 ```bash
 cmd /C npm install
-```
-
-Build the extension:
-
-```bash
+cmd /C npm run typecheck
 cmd /C npm run build
 ```
 
@@ -117,4 +113,9 @@ Bleeo is licensed under the Apache License 2.0. Redistributed copies must keep t
 
 Copyright is credited to `jupram`. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for details.
 
-If you use Bleeo or build on it, keep the attribution intact.
+- Filtering is on by default for common news and social domains.
+- Matched text is blurred in place and can be revealed temporarily with a click.
+- The popup can pause filtering on the current site for one hour, then resume it without changing the site's default.
+- All classification is local. No page text is sent to a server.
+- Sensitivity, global enablement, per-site overrides, and marker visibility are configurable.
+- The extension uses `activeTab` for the popup's current-site controls instead of broad tab URL access.
