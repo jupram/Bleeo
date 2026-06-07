@@ -139,8 +139,8 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function matchesWholeWord(text: string, term: string): boolean {
-  return new RegExp(`\\b${escapeRegExp(term)}\\b`, "i").test(text);
+function matchesWholeWord(text: string, word: string): boolean {
+  return new RegExp(`\\b${escapeRegExp(word)}\\b`, "i").test(text);
 }
 
 function uppercaseRatio(text: string): number {
@@ -230,11 +230,11 @@ export function scoreSensationalism(text: string, hostname?: string): { score: n
     };
   }
 
-  const alarmScore = ALARM_TERMS.reduce(
-    (total, { term, weight }) => (matchesWholeWord(normalized, term) ? total + weight : total),
-    0
-  );
-  addSignal(Math.min(0.42, alarmScore), "alarmist-language");
+  const alarmMatches = ALARM_WORDS.filter((word) => matchesWholeWord(normalized, word));
+  if (alarmMatches.length) {
+    score += Math.min(0.4, alarmMatches.length * 0.12);
+    reasonCode = "alarmist-language";
+  }
 
   const clickbaitMatch = CLICKBAIT_PATTERNS.find((pattern) => pattern.test(normalized));
   if (clickbaitMatch) {

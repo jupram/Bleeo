@@ -23,22 +23,6 @@ async function saveSettings(settings: Settings): Promise<void> {
   const sanitized = sanitizeSettings(settings);
   settingsCache = sanitized;
   await chrome.storage.sync.set(sanitized);
-  await broadcastSettings(sanitized);
-}
-
-async function broadcastSettings(settings: Settings): Promise<void> {
-  const tabs = await chrome.tabs.query({});
-  await Promise.all(
-    tabs
-      .filter((tab) => typeof tab.id === "number")
-      .map(async (tab) => {
-        try {
-          await chrome.tabs.sendMessage(tab.id as number, { type: "SETTINGS_UPDATED", settings } satisfies Message);
-        } catch {
-          // Ignore pages without an active content script.
-        }
-      })
-  );
 }
 
 async function hasOffscreenDocument(): Promise<boolean> {
@@ -99,6 +83,24 @@ async function toggleSite(hostname: string, enabled: boolean): Promise<Settings>
   const normalized = normalizeHostname(hostname);
   const next = mergeSettings(settingsCache);
   next.siteOverrides = { ...next.siteOverrides, [normalized]: enabled };
+  await saveSettings(next);
+  return next;
+}
+
+async function snoozeSite(hostname: string, until: number): Promise<Settings> {
+  const normalized = normalizeHostname(hostname);
+  const next = mergeSettings(settingsCache);
+  next.siteSnoozes = { ...next.siteSnoozes, [normalized]: until };
+  await saveSettings(next);
+  return next;
+}
+
+async function clearSiteSnooze(hostname: string): Promise<Settings> {
+  const normalized = normalizeHostname(hostname);
+  const next = mergeSettings(settingsCache);
+  const snoozes = { ...next.siteSnoozes };
+  delete snoozes[normalized];
+  next.siteSnoozes = snoozes;
   await saveSettings(next);
   return next;
 }
@@ -182,6 +184,18 @@ chrome.runtime.onMessage.addListener((message: Message | OffscreenClassifyMessag
       case "TOGGLE_SITE": {
         const hostname = sanitizeHostnameInput(message.hostname);
         const next = hostname ? await toggleSite(hostname, message.enabled) : currentSettings;
+        sendResponse({ settings: next });
+        return;
+      }
+      case "SNOOZE_SITE": {
+        const hostname = sanitizeHostnameInput(message.hostname);
+        const next = hostname ? await snoozeSite(hostname, message.until) : currentSettings;
+        sendResponse({ settings: next });
+        return;
+      }
+      case "CLEAR_SITE_SNOOZE": {
+        const hostname = sanitizeHostnameInput(message.hostname);
+        const next = hostname ? await clearSiteSnooze(hostname) : currentSettings;
         sendResponse({ settings: next });
         return;
       }

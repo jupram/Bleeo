@@ -5,6 +5,7 @@ export interface Settings {
   enabled: boolean;
   sensitivity: Sensitivity;
   siteOverrides: Record<string, boolean>;
+  siteSnoozes: Record<string, number>;
   showMarkers: boolean;
   modelMode: ModelMode;
 }
@@ -13,6 +14,8 @@ export interface EffectiveSettings extends Settings {
   hostname: string;
   siteEnabled: boolean;
   defaultEnabledForSite: boolean;
+  siteSnoozed: boolean;
+  siteSnoozedUntil?: number;
 }
 
 export interface CandidateText {
@@ -36,6 +39,8 @@ export type Message =
   | { type: "SET_SENSITIVITY"; sensitivity: Sensitivity }
   | { type: "SET_SHOW_MARKERS"; showMarkers: boolean }
   | { type: "TOGGLE_SITE"; hostname: string; enabled: boolean }
+  | { type: "SNOOZE_SITE"; hostname: string; until: number }
+  | { type: "CLEAR_SITE_SNOOZE"; hostname: string }
   | { type: "REMOVE_SITE_OVERRIDE"; hostname: string }
   | { type: "GET_ALL_SETTINGS" }
   | { type: "SETTINGS_UPDATED"; settings: Settings };

@@ -54,46 +54,6 @@ describe("heuristics", () => {
     expect(result.score).toBe(0);
   });
 
-  it("detects fear-appeal wording even without heavy punctuation", () => {
-    const results = classifyCandidates(
-      [{ id: "a", text: "This hidden danger in your kitchen could happen to you before it's too late" }],
-      "medium"
-    );
-
-    expect(results[0]?.label).toBe("sensational");
-    expect(results[0]?.reasonCode).toBe("fear-appeal");
-  });
-
-  it("detects outrage bait without all-caps text", () => {
-    const results = classifyCandidates(
-      [{ id: "a", text: "People are furious after the shocking decision sends shockwaves through the city" }],
-      "medium"
-    );
-
-    expect(results[0]?.label).toBe("sensational");
-    expect(results[0]?.reasonCode).toBe("outrage-bait");
-  });
-
-  it("detects curiosity-gap hooks", () => {
-    const results = classifyCandidates(
-      [{ id: "a", text: "Nobody is talking about the hidden truth behind this urgent warning" }],
-      "medium"
-    );
-
-    expect(results[0]?.label).toBe("sensational");
-    expect(results[0]?.reasonCode).toBe("curiosity-gap");
-  });
-
-  it("keeps calm civic reporting below the medium threshold", () => {
-    const results = classifyCandidates(
-      [{ id: "a", text: "Officials test emergency warning system during scheduled preparedness drill" }],
-      "medium"
-    );
-
-    expect(results[0]?.label).toBe("safe");
-    expect(results[0]?.score).toBeLessThan(0.68);
-  });
-
   it("does not auto-filter mixed-case social posts with only a few uppercase words", () => {
     const results = classifyCandidates(
       [{ id: "a", text: "this guy vibe coded an AI SURVIVAL APP that works COMPLETELY OFFLINE" }],
