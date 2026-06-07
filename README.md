@@ -16,6 +16,7 @@ The extension does not rate people, sources, or viewpoints. It only looks at the
 - Default filtering on common news and social domains.
 - In-place blur that preserves page layout.
 - Click-to-reveal behavior for filtered text.
+- One-hour per-site pause from the popup.
 - Sensitivity controls for low, medium, and high filtering.
 - Global enablement and per-site overrides.
 - Optional visible markers on filtered text.
@@ -28,6 +29,7 @@ Bleeo is designed so page text stays on your device.
 - No article text, post text, or browsing content is sent to a server.
 - Classification happens in the extension runtime.
 - Settings are stored with browser extension storage.
+- The extension uses `activeTab` for popup current-site controls instead of broad tab URL access.
 - The project has no analytics, tracking SDK, or telemetry dependency.
 
 ## How Filtering Works
@@ -36,11 +38,16 @@ Bleeo scans visible page text and identifies candidate headlines, posts, and sho
 
 - alarm-style words such as urgent, shocking, panic, chaos, and disaster;
 - clickbait phrases such as "you won't believe" and "what happened next";
+- fear appeals, outrage bait, urgency frames, and curiosity-gap hooks;
 - loaded words such as bombshell, exposed, and unbelievable;
 - repeated punctuation and strong uppercase emphasis;
 - social-feed-specific handling for all-caps hooks.
 
 This is intentionally conservative and explainable. The current classifier is rules-based, so contributors can inspect and improve the behavior without needing a hosted model.
+
+## Detection Quality
+
+Bleeo uses a local rules-based detector for fast, explainable classification in the browser. See [docs/detection-roadmap.md](docs/detection-roadmap.md) for the current detection approach and the path toward an optional in-browser model.
 
 ## Install For Development
 
@@ -112,10 +119,3 @@ tests/
 Bleeo is licensed under the Apache License 2.0. Redistributed copies must keep the copyright, license, and NOTICE attribution.
 
 Copyright is credited to `jupram`. See [LICENSE](LICENSE) and [NOTICE](NOTICE) for details.
-
-- Filtering is on by default for common news and social domains.
-- Matched text is blurred in place and can be revealed temporarily with a click.
-- The popup can pause filtering on the current site for one hour, then resume it without changing the site's default.
-- All classification is local. No page text is sent to a server.
-- Sensitivity, global enablement, per-site overrides, and marker visibility are configurable.
-- The extension uses `activeTab` for the popup's current-site controls instead of broad tab URL access.
