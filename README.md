@@ -24,3 +24,7 @@ cmd /C npm test
 - Matched text is blurred in place and can be revealed temporarily with a click.
 - All classification is local. No page text is sent to a server.
 - Sensitivity, global enablement, per-site overrides, and marker visibility are configurable.
+
+## Detection quality
+
+Bleeo uses a local rules-based detector for fast, explainable classification in the browser. See [docs/detection-roadmap.md](docs/detection-roadmap.md) for the current detection approach and the path toward an optional in-browser model.
