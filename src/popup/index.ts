@@ -6,6 +6,8 @@ const siteEnabledInput = document.querySelector<HTMLInputElement>("#site-enabled
 const sensitivityInput = document.querySelector<HTMLSelectElement>("#sensitivity");
 const modeElement = document.querySelector<HTMLElement>("#mode");
 const siteLabel = document.querySelector<HTMLElement>("#site-label");
+const siteStatusElement = document.querySelector<HTMLElement>("#site-status");
+const stateChip = document.querySelector<HTMLElement>("#state-chip");
 const snoozeSiteButton = document.querySelector<HTMLButtonElement>("#snooze-site");
 const openOptionsButton = document.querySelector<HTMLButtonElement>("#open-options");
 const SNOOZE_DURATION_MS = 60 * 60 * 1000;
@@ -113,6 +115,12 @@ function render(hostname: string, settings: EffectiveSettings) {
     modeElement.textContent = settings.modelMode === "local-ai" ? "Local AI" : "Rules fallback";
   }
 
+  if (stateChip) {
+    const active = settings.enabled && settings.siteEnabled && !settings.siteSnoozed;
+    stateChip.textContent = active ? "Active" : settings.siteSnoozed ? "Paused" : "Off";
+    stateChip.dataset.state = active ? "active" : settings.siteSnoozed ? "paused" : "off";
+  }
+
   if (siteLabel) {
     const defaultState = settings.siteSnoozed
       ? `Paused until ${formatSnoozeUntil(settings.siteSnoozedUntil)}`
@@ -120,6 +128,16 @@ function render(hostname: string, settings: EffectiveSettings) {
         ? "On by default here"
         : "Off by default here";
     siteLabel.textContent = hostname ? defaultState : "Site toggle is only available on web pages";
+  }
+
+  if (siteStatusElement) {
+    siteStatusElement.textContent = !hostname
+      ? "Unavailable"
+      : settings.siteSnoozed
+        ? "Paused"
+        : settings.siteEnabled
+          ? "Filtering"
+          : "Not filtering";
   }
 
   if (snoozeSiteButton) {

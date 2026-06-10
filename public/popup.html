@@ -8,39 +8,67 @@
   </head>
   <body>
     <main class="shell">
-      <section class="hero">
-        <p class="eyebrow">Mental-space filter</p>
-        <h1>Bleeo</h1>
-        <p class="lede">Blur sensationalized language before it hijacks your attention.</p>
+      <section class="hero" aria-labelledby="popup-title">
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true">B</div>
+          <div>
+            <p class="eyebrow">Mental-space filter</p>
+            <h1 id="popup-title">Bleeo</h1>
+          </div>
+        </div>
+        <p class="lede">Keep loud language softened while the page stays usable.</p>
       </section>
 
       <section class="panel">
-        <label class="toggle">
-          <span>Extension enabled</span>
+        <div class="panel-heading">
+          <span>Protection</span>
+          <strong id="state-chip" class="state-chip">Loading</strong>
+        </div>
+
+        <label class="toggle switch-row">
+          <span class="label-stack">
+            <span>Extension</span>
+            <small>Across supported sites</small>
+          </span>
           <input id="global-enabled" type="checkbox" />
+          <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
-        <label class="toggle">
-          <span id="site-label">Filtering on this site</span>
+        <label class="toggle switch-row">
+          <span class="label-stack">
+            <span>This site</span>
+            <small id="site-label">Checking current page</small>
+          </span>
           <input id="site-enabled" type="checkbox" />
+          <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
         <label class="field">
-          <span>Sensitivity</span>
-          <select id="sensitivity">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
+          <span class="field-label">Sensitivity</span>
+          <span class="select-shell">
+            <select id="sensitivity">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </span>
         </label>
 
-        <div class="status">
-          <span class="status-label">Mode</span>
-          <strong id="mode">Loading</strong>
+        <div class="status-grid" aria-label="Current filter state">
+          <div class="status-card">
+            <span class="status-label">Mode</span>
+            <strong id="mode">Loading</strong>
+          </div>
+          <div class="status-card">
+            <span class="status-label">Page</span>
+            <strong id="site-status">Loading</strong>
+          </div>
         </div>
 
-        <button id="snooze-site" class="button secondary" type="button">Pause this site</button>
-        <button id="open-options" class="button" type="button">Open settings</button>
+        <div class="actions">
+          <button id="snooze-site" class="button secondary" type="button">Pause this site</button>
+          <button id="open-options" class="button" type="button">Open settings</button>
+        </div>
       </section>
     </main>
 
