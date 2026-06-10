@@ -7,7 +7,7 @@ const MAX_RESULT_CACHE_ENTRIES = 1500;
 const REVEAL_TIMEOUT_MS = 9000;
 const SCAN_DEBOUNCE_MS = 450;
 
-const processedNodes = new WeakSet<Text>();
+let processedNodes = new WeakMap<Text, string>();
 const resultCache = new Map<string, ClassificationResult>();
 let currentSettings: EffectiveSettings = getEffectiveSettings(DEFAULT_SETTINGS, window.location.hostname);
 let scanTimer: number | null = null;
@@ -31,13 +31,33 @@ function hashText(text: string): string {
   return hash.toString(16);
 }
 
+function normalizeTextContent(text: string): string {
+  return text.replace(/\s+/g, " ").trim();
+}
+
+function cacheKey(id: string, sensitivity = currentSettings.sensitivity): string {
+  return `${sensitivity}:${id}`;
+}
+
+function getCachedResult(id: string, sensitivity = currentSettings.sensitivity): ClassificationResult | undefined {
+  return resultCache.get(cacheKey(id, sensitivity));
+}
+
+function markProcessedNode(textNode: Text) {
+  processedNodes.set(textNode, normalizeTextContent(textNode.textContent ?? ""));
+}
+
+function hasProcessedNode(textNode: Text): boolean {
+  return processedNodes.get(textNode) === normalizeTextContent(textNode.textContent ?? "");
+}
+
 function shouldSkipNode(textNode: Text): boolean {
   const parent = textNode.parentElement;
   if (!parent) {
     return true;
   }
 
-  if (processedNodes.has(textNode)) {
+  if (hasProcessedNode(textNode)) {
     return true;
   }
 
@@ -72,7 +92,7 @@ function shouldSkipAggregateNode(textNode: Text): boolean {
     return true;
   }
 
-  if (processedNodes.has(textNode)) {
+  if (hasProcessedNode(textNode)) {
     return true;
   }
 
@@ -88,7 +108,7 @@ function shouldSkipAggregateNode(textNode: Text): boolean {
     return true;
   }
 
-  const text = (textNode.textContent ?? "").replace(/\s+/g, " ").trim();
+  const text = normalizeTextContent(textNode.textContent ?? "");
   if (!text) {
     return true;
   }
@@ -169,7 +189,7 @@ function collectAggregateEntries(root: ParentNode = document.body): { entries: S
     }
 
     const text = nodes
-      .map((node) => (node.textContent ?? "").replace(/\s+/g, " ").trim())
+      .map((node) => normalizeTextContent(node.textContent ?? ""))
       .filter(Boolean)
       .join(" ")
       .replace(/\s+/g, " ")
@@ -180,8 +200,8 @@ function collectAggregateEntries(root: ParentNode = document.body): { entries: S
     }
 
     const id = hashText(text);
-    if (resultCache.get(id)?.label === "safe") {
-      nodes.forEach((node) => processedNodes.add(node));
+    if (getCachedResult(id)?.label === "safe") {
+      nodes.forEach(markProcessedNode);
       continue;
     }
 
@@ -205,15 +225,15 @@ function collectCandidates(root: ParentNode = document.body, excludedRoots: Elem
       continue;
     }
 
-    const text = (node.textContent ?? "").replace(/\s+/g, " ").trim();
+    const text = normalizeTextContent(node.textContent ?? "");
     const id = hashText(text);
 
-    if (resultCache.get(id)?.label === "sensational") {
+    if (getCachedResult(id)?.label === "sensational") {
       collected.push({ candidate: { id, text }, nodes: [node] });
       continue;
     }
 
-    if (!resultCache.has(id)) {
+    if (!getCachedResult(id)) {
       collected.push({ candidate: { id, text }, nodes: [node] });
     }
   }
@@ -266,12 +286,13 @@ function withObserverSuppressed<T>(callback: () => T): T {
   }
 }
 
-function cacheResult(result: ClassificationResult) {
-  if (resultCache.has(result.id)) {
-    resultCache.delete(result.id);
+function cacheResult(result: ClassificationResult, sensitivity = currentSettings.sensitivity) {
+  const key = cacheKey(result.id, sensitivity);
+  if (resultCache.has(key)) {
+    resultCache.delete(key);
   }
 
-  resultCache.set(result.id, result);
+  resultCache.set(key, result);
   if (resultCache.size <= MAX_RESULT_CACHE_ENTRIES) {
     return;
   }
@@ -319,14 +340,14 @@ function applyFilteredWrapper(node: Text, result: ClassificationResult) {
 
   parent.replaceChild(wrapper, node);
   wrapper.textContent = node.textContent;
-  processedNodes.add(node);
 }
 
 async function classifyAndFilter(entries: ScanEntry[]) {
+  const sensitivity = currentSettings.sensitivity;
   const uncachedCandidates = Array.from(
     new Map(
       entries
-        .filter(({ candidate }) => !resultCache.has(candidate.id))
+        .filter(({ candidate }) => !getCachedResult(candidate.id, sensitivity))
         .map(({ candidate }) => [candidate.id, candidate] as const)
     ).values()
   );
@@ -344,13 +365,18 @@ async function classifyAndFilter(entries: ScanEntry[]) {
     });
 
     for (const result of response?.results ?? []) {
-      cacheResult(result);
+      cacheResult(result, sensitivity);
     }
+  }
+
+  if (!currentSettings.siteEnabled || sensitivity !== currentSettings.sensitivity) {
+    await reportFilteredCount();
+    return;
   }
 
   withObserverSuppressed(() => {
     for (const entry of entries) {
-      const result = resultCache.get(entry.candidate.id);
+      const result = getCachedResult(entry.candidate.id, sensitivity);
       if (!result) {
         continue;
       }
@@ -361,7 +387,7 @@ async function classifyAndFilter(entries: ScanEntry[]) {
         }
       } else {
         for (const node of entry.nodes) {
-          processedNodes.add(node);
+          markProcessedNode(node);
         }
       }
     }
@@ -506,10 +532,17 @@ async function loadSettings() {
 }
 
 function applySettingsUpdate(settings: Settings) {
+  const previousSensitivity = currentSettings.sensitivity;
   const merged = mergeSettings(settings);
   currentSettings = getEffectiveSettings(merged, window.location.hostname);
   scheduleSnoozeExpiry();
   updateMarkerState();
+
+  if (previousSensitivity !== currentSettings.sensitivity) {
+    resultCache.clear();
+    processedNodes = new WeakMap<Text, string>();
+    removeFilteredWrappers();
+  }
 
   if (!currentSettings.siteEnabled) {
     observer?.disconnect();
