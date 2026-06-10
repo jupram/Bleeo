@@ -35,6 +35,14 @@ describe("heuristics", () => {
     expect(results[1]?.label).toBe("safe");
   });
 
+  it("keeps borderline text sensitivity-dependent", () => {
+    const candidates = [{ id: "a", text: "Hidden danger in your kitchen before it's too late" }];
+
+    expect(classifyCandidates(candidates, "high")[0]?.label).toBe("sensational");
+    expect(classifyCandidates(candidates, "medium")[0]?.label).toBe("safe");
+    expect(classifyCandidates(candidates, "low")[0]?.label).toBe("safe");
+  });
+
   it("filters uppercase-emphasis posts on social hosts", () => {
     const candidates = [{ id: "a", text: "THIS IS EXACTLY WHY I AM NEVER GOING BACK THERE AGAIN" }];
 
