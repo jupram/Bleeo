@@ -8,33 +8,63 @@
   </head>
   <body>
     <main class="page">
-      <section class="masthead">
-        <p class="eyebrow">Bleeo</p>
-        <h1>Filter settings</h1>
+      <section class="masthead" aria-labelledby="settings-title">
+        <div class="brand-row">
+          <div class="brand-mark" aria-hidden="true">B</div>
+          <div>
+            <p class="eyebrow">Bleeo</p>
+            <h1 id="settings-title">Filter settings</h1>
+          </div>
+        </div>
         <p>Keep the filter calm, local, and under your control.</p>
       </section>
 
-      <section class="card controls">
-        <label class="toggle">
-          <span>Enable extension</span>
+      <section class="summary-grid" aria-label="Settings summary">
+        <div class="summary-item">
+          <span>Privacy</span>
+          <strong>Local</strong>
+        </div>
+        <div class="summary-item">
+          <span>Default scope</span>
+          <strong>News + feeds</strong>
+        </div>
+        <div class="summary-item">
+          <span>Control</span>
+          <strong>Per site</strong>
+        </div>
+      </section>
+
+      <section class="card controls" aria-label="Core controls">
+        <label class="toggle switch-row">
+          <span class="label-stack">
+            <span>Enable extension</span>
+            <small>Master filtering control</small>
+          </span>
           <input id="enabled" type="checkbox" />
+          <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
         <label class="field">
-          <span>Sensitivity</span>
-          <select id="sensitivity">
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-          </select>
+          <span class="field-label">Sensitivity</span>
+          <span class="select-shell">
+            <select id="sensitivity">
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </span>
         </label>
 
-        <label class="toggle">
-          <span>Show filter markers</span>
+        <label class="toggle switch-row">
+          <span class="label-stack">
+            <span>Show filter markers</span>
+            <small>Badge filtered phrases on the page</small>
+          </span>
           <input id="markers" type="checkbox" />
+          <span class="switch-ui" aria-hidden="true"></span>
         </label>
 
-        <div class="status">
+        <div class="status-card">
           <span>Classifier mode</span>
           <strong id="mode">Loading</strong>
         </div>
@@ -46,19 +76,21 @@
             <h2>Site overrides</h2>
             <p>Use overrides to explicitly enable or disable filtering per hostname.</p>
           </div>
-          <button id="refresh" type="button">Refresh</button>
+          <button id="refresh" class="button subtle" type="button">Refresh</button>
         </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th>Hostname</th>
-              <th>State</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="site-overrides"></tbody>
-        </table>
+        <div class="table-shell">
+          <table>
+            <thead>
+              <tr>
+                <th>Hostname</th>
+                <th>State</th>
+                <th><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="site-overrides"></tbody>
+          </table>
+        </div>
         <p id="empty-state" class="empty">No site overrides yet.</p>
       </section>
 

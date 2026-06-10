@@ -34,12 +34,13 @@ function renderOverrides(settings: Settings) {
 
     const stateCell = document.createElement("td");
     const pill = document.createElement("span");
-    pill.className = "pill";
+    pill.className = `pill ${enabled ? "enabled" : "disabled"}`;
     pill.textContent = enabled ? "Enabled" : "Disabled";
     stateCell.appendChild(pill);
 
     const actionCell = document.createElement("td");
     const button = document.createElement("button");
+    button.className = "button danger";
     button.type = "button";
     button.textContent = "Remove";
     button.addEventListener("click", async () => {
