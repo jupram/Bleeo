@@ -13,16 +13,35 @@ interface OffscreenClassifyMessage {
 let settingsCache: Settings = DEFAULT_SETTINGS;
 let offscreenReady: Promise<void> | null = null;
 
+const GLOBAL_DEFAULTS = {
+  enabled: DEFAULT_SETTINGS.enabled,
+  sensitivity: DEFAULT_SETTINGS.sensitivity,
+  showMarkers: DEFAULT_SETTINGS.showMarkers,
+  modelMode: DEFAULT_SETTINGS.modelMode
+};
+
+const LOCAL_DEFAULTS = {
+  siteOverrides: DEFAULT_SETTINGS.siteOverrides,
+  siteSnoozes: DEFAULT_SETTINGS.siteSnoozes
+};
+
 async function loadSettings(): Promise<Settings> {
-  const stored = await chrome.storage.sync.get({ ...DEFAULT_SETTINGS });
-  settingsCache = sanitizeSettings(stored);
+  const [syncData, localData] = await Promise.all([
+    chrome.storage.sync.get(GLOBAL_DEFAULTS),
+    chrome.storage.local.get(LOCAL_DEFAULTS)
+  ]);
+  settingsCache = sanitizeSettings({ ...syncData, ...localData });
   return settingsCache;
 }
 
 async function saveSettings(settings: Settings): Promise<void> {
   const sanitized = sanitizeSettings(settings);
   settingsCache = sanitized;
-  await chrome.storage.sync.set(sanitized);
+  const { siteOverrides, siteSnoozes, ...globalPrefs } = sanitized;
+  await Promise.all([
+    chrome.storage.sync.set(globalPrefs),
+    chrome.storage.local.set({ siteOverrides, siteSnoozes })
+  ]);
 }
 
 async function hasOffscreenDocument(): Promise<boolean> {
@@ -112,7 +131,26 @@ async function updateBadge(tabId: number, count: number): Promise<void> {
   await chrome.action.setBadgeBackgroundColor({ tabId, color });
 }
 
+async function migratePerSiteDataFromSync(): Promise<void> {
+  const synced = await chrome.storage.sync.get(["siteOverrides", "siteSnoozes"]);
+  if (!("siteOverrides" in synced) && !("siteSnoozes" in synced)) {
+    return;
+  }
+
+  const toLocal: Record<string, unknown> = {};
+  if ("siteOverrides" in synced) {
+    toLocal.siteOverrides = synced.siteOverrides;
+  }
+  if ("siteSnoozes" in synced) {
+    toLocal.siteSnoozes = synced.siteSnoozes;
+  }
+
+  await chrome.storage.local.set(toLocal);
+  await chrome.storage.sync.remove(["siteOverrides", "siteSnoozes"]);
+}
+
 chrome.runtime.onInstalled.addListener(async () => {
+  await migratePerSiteDataFromSync();
   await loadSettings();
 });
 
@@ -121,7 +159,7 @@ chrome.runtime.onStartup.addListener(async () => {
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== "sync") {
+  if (areaName !== "sync" && areaName !== "local") {
     return;
   }
 
@@ -153,7 +191,7 @@ chrome.runtime.onMessage.addListener((message: Message | OffscreenClassifyMessag
         return;
       }
       case "REPORT_FILTER_COUNT": {
-        if (typeof _sender.tab?.id === "number") {
+        if (typeof _sender.tab?.id === "number" && _sender.id === chrome.runtime.id) {
           await updateBadge(_sender.tab.id, sanitizeCount(message.count));
         }
         sendResponse({});
@@ -210,9 +248,6 @@ chrome.runtime.onMessage.addListener((message: Message | OffscreenClassifyMessag
         }
         sendResponse({ settings: next });
         return;
-      }
-      default: {
-        sendResponse({});
       }
     }
   })();
