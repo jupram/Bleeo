@@ -133,19 +133,23 @@ async function updateBadge(tabId: number, count: number): Promise<void> {
 
 async function migratePerSiteDataFromSync(): Promise<void> {
   const synced = await chrome.storage.sync.get(["siteOverrides", "siteSnoozes"]);
-  if (!("siteOverrides" in synced) && !("siteSnoozes" in synced)) {
+  const hasSiteOverrides = Object.prototype.hasOwnProperty.call(synced, "siteOverrides");
+  const hasSiteSnoozes = Object.prototype.hasOwnProperty.call(synced, "siteSnoozes");
+  if (!hasSiteOverrides && !hasSiteSnoozes) {
     return;
   }
 
   const toLocal: Record<string, unknown> = {};
-  if ("siteOverrides" in synced) {
+  if (hasSiteOverrides && typeof synced.siteOverrides !== "undefined") {
     toLocal.siteOverrides = synced.siteOverrides;
   }
-  if ("siteSnoozes" in synced) {
+  if (hasSiteSnoozes && typeof synced.siteSnoozes !== "undefined") {
     toLocal.siteSnoozes = synced.siteSnoozes;
   }
 
-  await chrome.storage.local.set(toLocal);
+  if (Object.keys(toLocal).length > 0) {
+    await chrome.storage.local.set(toLocal);
+  }
   await chrome.storage.sync.remove(["siteOverrides", "siteSnoozes"]);
 }
 
@@ -247,6 +251,10 @@ chrome.runtime.onMessage.addListener((message: Message | OffscreenClassifyMessag
           await saveSettings(next);
         }
         sendResponse({ settings: next });
+        return;
+      }
+      default: {
+        sendResponse({ error: "UNKNOWN_MESSAGE_TYPE" });
         return;
       }
     }
