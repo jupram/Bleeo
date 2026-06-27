@@ -28,8 +28,8 @@ Bleeo is designed so page text stays on your device.
 
 - No article text, post text, or browsing content is sent to a server.
 - Classification happens in the extension runtime.
-- Settings are stored with browser extension storage.
-- The extension uses `activeTab` for popup current-site controls instead of broad tab URL access.
+- Global preferences are stored in sync storage. Per-site overrides and snooze state are stored in local storage only and do not follow the user across signed-in profiles or devices.
+- The extension only requests access to the supported news and social domains and does not run on other sites. `activeTab` is used for popup current-site controls.
 - The project has no analytics, tracking SDK, or telemetry dependency.
 
 ## How Filtering Works

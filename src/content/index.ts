@@ -568,7 +568,7 @@ chrome.runtime.onMessage.addListener((message: Message) => {
 });
 
 chrome.storage.onChanged.addListener((changes, areaName) => {
-  if (areaName !== "sync") {
+  if (areaName !== "sync" && areaName !== "local") {
     return;
   }
 
