@@ -36,6 +36,7 @@ function recordsEqual<T extends string | number | boolean>(left: Record<string, 
   return leftKeys.every((key) => left[key] === right[key]);
 }
 
+
 async function loadSettings(): Promise<Settings> {
   const [syncData, localData] = await Promise.all([
     chrome.storage.sync.get(GLOBAL_DEFAULTS),
