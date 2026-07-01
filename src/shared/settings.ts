@@ -1,4 +1,4 @@
-import type { EffectiveSettings, Settings } from "./types";
+import type { EffectiveSettings, PopupState, Settings } from "./types";
 
 export const DEFAULT_SETTINGS: Settings = {
   enabled: true,
@@ -159,5 +159,16 @@ export function getEffectiveSettings(settings: Settings, hostname: string): Effe
     siteEnabled: settings.enabled && siteEnabled && !siteSnoozed,
     siteSnoozed,
     siteSnoozedUntil: siteSnoozed ? siteSnoozedUntil : undefined
+  };
+}
+
+export function getPopupState(settings: Settings, hostname: string): PopupState {
+  const effectiveSettings = getEffectiveSettings(settings, hostname);
+  const override = settings.siteOverrides[effectiveSettings.hostname];
+
+  return {
+    ...effectiveSettings,
+    sitePreferenceEnabled: override ?? effectiveSettings.defaultEnabledForSite,
+    sitePreferenceSource: typeof override === "boolean" ? "override" : "default"
   };
 }

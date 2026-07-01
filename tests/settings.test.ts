@@ -1,6 +1,13 @@
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_SETTINGS, getEffectiveSettings, isDefaultTargetHost, mergeSettings, sanitizeSettings } from "../src/shared/settings";
+import {
+  DEFAULT_SETTINGS,
+  getEffectiveSettings,
+  getPopupState,
+  isDefaultTargetHost,
+  mergeSettings,
+  sanitizeSettings
+} from "../src/shared/settings";
 
 describe("settings", () => {
   it("detects default target hosts", () => {
@@ -34,6 +41,36 @@ describe("settings", () => {
     expect(snoozed.siteSnoozed).toBe(true);
     expect(snoozed.siteEnabled).toBe(false);
     expect(snoozed.siteSnoozedUntil).toBeTypeOf("number");
+  });
+
+  it("keeps popup site preference enabled when global filtering is off", () => {
+    const popupState = getPopupState(mergeSettings({ enabled: false }), "news.google.com");
+
+    expect(popupState.sitePreferenceEnabled).toBe(true);
+    expect(popupState.sitePreferenceSource).toBe("default");
+    expect(popupState.siteEnabled).toBe(false);
+  });
+
+  it("keeps popup site preference enabled while a site is snoozed", () => {
+    const popupState = getPopupState(
+      mergeSettings({ siteSnoozes: { "news.google.com": Date.now() + 60_000 } }),
+      "news.google.com"
+    );
+
+    expect(popupState.sitePreferenceEnabled).toBe(true);
+    expect(popupState.sitePreferenceSource).toBe("default");
+    expect(popupState.siteSnoozed).toBe(true);
+    expect(popupState.siteEnabled).toBe(false);
+  });
+
+  it("marks explicit popup site overrides separately from defaults", () => {
+    const popupState = getPopupState(
+      mergeSettings({ siteOverrides: { "news.google.com": false, "example.com": true } }),
+      "news.google.com"
+    );
+
+    expect(popupState.sitePreferenceEnabled).toBe(false);
+    expect(popupState.sitePreferenceSource).toBe("override");
   });
 
   it("sanitizes invalid stored settings", () => {

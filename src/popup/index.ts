@@ -1,5 +1,4 @@
-import { isDefaultTargetHost } from "../shared/settings";
-import type { EffectiveSettings, Message, Settings } from "../shared/types";
+import type { Message, PopupState, Settings } from "../shared/types";
 
 const globalEnabledInput = document.querySelector<HTMLInputElement>("#global-enabled");
 const siteEnabledInput = document.querySelector<HTMLInputElement>("#site-enabled");
@@ -31,7 +30,7 @@ async function sendMessage<T>(message: Message): Promise<T> {
 }
 
 async function refreshPopup(hostname: string) {
-  const response = await sendMessage<{ settings: EffectiveSettings }>({
+  const response = await sendMessage<{ settings: PopupState }>({
     type: "GET_POPUP_STATE",
     hostname
   });
@@ -60,7 +59,7 @@ function bindHandlers(hostname: string) {
     }
     await sendMessage<{ settings: Settings }>({
       type: "SET_SENSITIVITY",
-      sensitivity: sensitivityInput.value as EffectiveSettings["sensitivity"]
+      sensitivity: sensitivityInput.value as PopupState["sensitivity"]
     });
     await refreshPopup(hostname);
   });
@@ -95,7 +94,7 @@ function formatSnoozeUntil(until?: number): string {
   return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(until));
 }
 
-function render(hostname: string, settings: EffectiveSettings) {
+function render(hostname: string, settings: PopupState) {
   const siteToggleAvailable = Boolean(hostname);
 
   if (globalEnabledInput) {
@@ -103,7 +102,7 @@ function render(hostname: string, settings: EffectiveSettings) {
   }
 
   if (siteEnabledInput) {
-    siteEnabledInput.checked = settings.siteEnabled;
+    siteEnabledInput.checked = settings.sitePreferenceEnabled;
     siteEnabledInput.disabled = !siteToggleAvailable;
   }
 
@@ -124,9 +123,13 @@ function render(hostname: string, settings: EffectiveSettings) {
   if (siteLabel) {
     const defaultState = settings.siteSnoozed
       ? `Paused until ${formatSnoozeUntil(settings.siteSnoozedUntil)}`
-      : isDefaultTargetHost(hostname)
-        ? "On by default here"
-        : "Off by default here";
+      : settings.sitePreferenceSource === "override"
+        ? settings.sitePreferenceEnabled
+          ? "On for this site"
+          : "Off for this site"
+        : settings.defaultEnabledForSite
+          ? "On by default here"
+          : "Off by default here";
     siteLabel.textContent = hostname ? defaultState : "Site toggle is only available on web pages";
   }
 

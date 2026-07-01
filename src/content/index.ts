@@ -51,6 +51,17 @@ function hasProcessedNode(textNode: Text): boolean {
   return processedNodes.get(textNode) === normalizeTextContent(textNode.textContent ?? "");
 }
 
+function isHiddenByAncestor(element: Element): boolean {
+  for (let current: Element | null = element; current; current = current.parentElement) {
+    const style = window.getComputedStyle(current);
+    if (style.visibility === "hidden" || style.visibility === "collapse" || style.display === "none") {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 function shouldSkipNode(textNode: Text): boolean {
   const parent = textNode.parentElement;
   if (!parent) {
@@ -78,8 +89,7 @@ function shouldSkipNode(textNode: Text): boolean {
     return true;
   }
 
-  const style = window.getComputedStyle(parent);
-  if (style.visibility === "hidden" || style.display === "none") {
+  if (isHiddenByAncestor(parent)) {
     return true;
   }
 
@@ -113,8 +123,7 @@ function shouldSkipAggregateNode(textNode: Text): boolean {
     return true;
   }
 
-  const style = window.getComputedStyle(parent);
-  if (style.visibility === "hidden" || style.display === "none") {
+  if (isHiddenByAncestor(parent)) {
     return true;
   }
 
