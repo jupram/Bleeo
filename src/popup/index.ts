@@ -11,17 +11,27 @@ const snoozeSiteButton = document.querySelector<HTMLButtonElement>("#snooze-site
 const openOptionsButton = document.querySelector<HTMLButtonElement>("#open-options");
 const SNOOZE_DURATION_MS = 60 * 60 * 1000;
 
-async function getActiveHostname(): Promise<string> {
+interface ActiveTabInfo {
+  hostname: string;
+  siteToggleAvailable: boolean;
+}
+
+async function getActiveTabInfo(): Promise<ActiveTabInfo> {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url) {
-    return "";
+    return { hostname: "", siteToggleAvailable: false };
   }
 
   try {
     const parsed = new URL(tab.url);
-    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed.hostname : "";
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return { hostname: "", siteToggleAvailable: false };
+    }
+
+    const siteToggleAvailable = await chrome.permissions.contains({ origins: [tab.url] });
+    return { hostname: parsed.hostname, siteToggleAvailable };
   } catch {
-    return "";
+    return { hostname: "", siteToggleAvailable: false };
   }
 }
 
@@ -29,19 +39,19 @@ async function sendMessage<T>(message: Message): Promise<T> {
   return chrome.runtime.sendMessage(message);
 }
 
-async function refreshPopup(hostname: string) {
+async function refreshPopup(hostname: string, siteToggleAvailable: boolean) {
   const response = await sendMessage<{ settings: PopupState }>({
     type: "GET_POPUP_STATE",
     hostname
   });
 
-  render(hostname, response.settings);
+  render(hostname, siteToggleAvailable, response.settings);
 }
 
-function bindHandlers(hostname: string) {
+function bindHandlers(hostname: string, siteToggleAvailable: boolean) {
   globalEnabledInput?.addEventListener("change", async () => {
     await sendMessage<{ settings: Settings }>({ type: "TOGGLE_GLOBAL", enabled: Boolean(globalEnabledInput?.checked) });
-    await refreshPopup(hostname);
+    await refreshPopup(hostname, siteToggleAvailable);
   });
 
   siteEnabledInput?.addEventListener("change", async () => {
@@ -50,7 +60,7 @@ function bindHandlers(hostname: string) {
       hostname,
       enabled: Boolean(siteEnabledInput?.checked)
     });
-    await refreshPopup(hostname);
+    await refreshPopup(hostname, siteToggleAvailable);
   });
 
   sensitivityInput?.addEventListener("change", async () => {
@@ -61,11 +71,11 @@ function bindHandlers(hostname: string) {
       type: "SET_SENSITIVITY",
       sensitivity: sensitivityInput.value as PopupState["sensitivity"]
     });
-    await refreshPopup(hostname);
+    await refreshPopup(hostname, siteToggleAvailable);
   });
 
   snoozeSiteButton?.addEventListener("click", async () => {
-    if (!hostname) {
+    if (!siteToggleAvailable) {
       return;
     }
 
@@ -78,7 +88,7 @@ function bindHandlers(hostname: string) {
         until: Date.now() + SNOOZE_DURATION_MS
       });
     }
-    await refreshPopup(hostname);
+    await refreshPopup(hostname, siteToggleAvailable);
   });
 
   openOptionsButton?.addEventListener("click", () => {
@@ -94,9 +104,7 @@ function formatSnoozeUntil(until?: number): string {
   return new Intl.DateTimeFormat(undefined, { hour: "numeric", minute: "2-digit" }).format(new Date(until));
 }
 
-function render(hostname: string, settings: PopupState) {
-  const siteToggleAvailable = Boolean(hostname);
-
+function render(hostname: string, siteToggleAvailable: boolean, settings: PopupState) {
   if (globalEnabledInput) {
     globalEnabledInput.checked = settings.enabled;
   }
@@ -130,11 +138,15 @@ function render(hostname: string, settings: PopupState) {
         : settings.defaultEnabledForSite
           ? "On by default here"
           : "Off by default here";
-    siteLabel.textContent = hostname ? defaultState : "Site toggle is only available on web pages";
+    siteLabel.textContent = siteToggleAvailable
+      ? defaultState
+      : hostname
+        ? "Site toggle isn't available on this site"
+        : "Site toggle is only available on web pages";
   }
 
   if (siteStatusElement) {
-    siteStatusElement.textContent = !hostname
+    siteStatusElement.textContent = !siteToggleAvailable
       ? "Unavailable"
       : settings.siteSnoozed
         ? "Paused"
@@ -151,7 +163,7 @@ function render(hostname: string, settings: PopupState) {
 }
 
 void (async () => {
-  const hostname = await getActiveHostname();
-  await refreshPopup(hostname);
-  bindHandlers(hostname);
+  const { hostname, siteToggleAvailable } = await getActiveTabInfo();
+  await refreshPopup(hostname, siteToggleAvailable);
+  bindHandlers(hostname, siteToggleAvailable);
 })();
