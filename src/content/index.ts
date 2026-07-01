@@ -51,7 +51,21 @@ function hasProcessedNode(textNode: Text): boolean {
   return processedNodes.get(textNode) === normalizeTextContent(textNode.textContent ?? "");
 }
 
-function shouldSkipNode(textNode: Text): boolean {
+function isHiddenByAncestor(element: Element, cache: WeakMap<Element, boolean>): boolean {
+  const cached = cache.get(element);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const style = window.getComputedStyle(element);
+  const hiddenHere = style.visibility === "hidden" || style.visibility === "collapse" || style.display === "none";
+  const hidden = hiddenHere || (element.parentElement ? isHiddenByAncestor(element.parentElement, cache) : false);
+
+  cache.set(element, hidden);
+  return hidden;
+}
+
+function shouldSkipNode(textNode: Text, hiddenCache: WeakMap<Element, boolean>): boolean {
   const parent = textNode.parentElement;
   if (!parent) {
     return true;
@@ -78,15 +92,14 @@ function shouldSkipNode(textNode: Text): boolean {
     return true;
   }
 
-  const style = window.getComputedStyle(parent);
-  if (style.visibility === "hidden" || style.display === "none") {
+  if (isHiddenByAncestor(parent, hiddenCache)) {
     return true;
   }
 
   return false;
 }
 
-function shouldSkipAggregateNode(textNode: Text): boolean {
+function shouldSkipAggregateNode(textNode: Text, hiddenCache: WeakMap<Element, boolean>): boolean {
   const parent = textNode.parentElement;
   if (!parent) {
     return true;
@@ -113,8 +126,7 @@ function shouldSkipAggregateNode(textNode: Text): boolean {
     return true;
   }
 
-  const style = window.getComputedStyle(parent);
-  if (style.visibility === "hidden" || style.display === "none") {
+  if (isHiddenByAncestor(parent, hiddenCache)) {
     return true;
   }
 
@@ -155,7 +167,10 @@ function aggregateSelectorsForHost(hostname: string): string[] {
   return [];
 }
 
-function collectAggregateEntries(root: ParentNode = document.body): { entries: ScanEntry[]; roots: Element[] } {
+function collectAggregateEntries(
+  root: ParentNode = document.body,
+  hiddenCache: WeakMap<Element, boolean> = new WeakMap()
+): { entries: ScanEntry[]; roots: Element[] } {
   const selectors = aggregateSelectorsForHost(window.location.hostname);
   if (!selectors.length) {
     return { entries: [], roots: [] };
@@ -178,7 +193,7 @@ function collectAggregateEntries(root: ParentNode = document.body): { entries: S
 
     while (walker.nextNode()) {
       const node = walker.currentNode as Text;
-      if (shouldSkipAggregateNode(node)) {
+      if (shouldSkipAggregateNode(node, hiddenCache)) {
         continue;
       }
       nodes.push(node);
@@ -211,7 +226,11 @@ function collectAggregateEntries(root: ParentNode = document.body): { entries: S
   return { entries, roots };
 }
 
-function collectCandidates(root: ParentNode = document.body, excludedRoots: Element[] = []): ScanEntry[] {
+function collectCandidates(
+  root: ParentNode = document.body,
+  excludedRoots: Element[] = [],
+  hiddenCache: WeakMap<Element, boolean> = new WeakMap()
+): ScanEntry[] {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const collected: ScanEntry[] = [];
 
@@ -221,7 +240,7 @@ function collectCandidates(root: ParentNode = document.body, excludedRoots: Elem
       continue;
     }
 
-    if (shouldSkipNode(node)) {
+    if (shouldSkipNode(node, hiddenCache)) {
       continue;
     }
 
@@ -423,8 +442,11 @@ async function scanPage() {
     return;
   }
 
-  const aggregate = isSocialHost(window.location.hostname) ? collectAggregateEntries() : { entries: [], roots: [] };
-  const standaloneEntries = collectCandidates(document.body, aggregate.roots);
+  const hiddenCache = new WeakMap<Element, boolean>();
+  const aggregate = isSocialHost(window.location.hostname)
+    ? collectAggregateEntries(document.body, hiddenCache)
+    : { entries: [], roots: [] };
+  const standaloneEntries = collectCandidates(document.body, aggregate.roots, hiddenCache);
   const entries = [...aggregate.entries, ...standaloneEntries];
   if (!entries.length) {
     await reportFilteredCount();

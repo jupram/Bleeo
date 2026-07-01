@@ -18,6 +18,11 @@ export interface EffectiveSettings extends Settings {
   siteSnoozedUntil?: number;
 }
 
+export interface PopupState extends EffectiveSettings {
+  sitePreferenceEnabled: boolean;
+  sitePreferenceSource: "default" | "override";
+}
+
 export interface CandidateText {
   id: string;
   text: string;

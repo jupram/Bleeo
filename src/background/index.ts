@@ -1,5 +1,5 @@
 import { classifyCandidates } from "../shared/heuristics";
-import { DEFAULT_SETTINGS, getEffectiveSettings, mergeSettings, normalizeHostname, sanitizeSettings } from "../shared/settings";
+import { DEFAULT_SETTINGS, getEffectiveSettings, getPopupState, mergeSettings, normalizeHostname, sanitizeSettings } from "../shared/settings";
 import type { CandidateText, ClassificationResult, Message, Settings } from "../shared/types";
 import { sanitizeCandidates, sanitizeCount, sanitizeHostnameInput } from "../shared/validation";
 
@@ -25,6 +25,18 @@ const LOCAL_DEFAULTS = {
   siteSnoozes: DEFAULT_SETTINGS.siteSnoozes
 };
 
+function recordsEqual<T extends string | number | boolean>(left: Record<string, T>, right: Record<string, T>): boolean {
+  const leftKeys = Object.keys(left);
+  const rightKeys = Object.keys(right);
+
+  if (leftKeys.length !== rightKeys.length) {
+    return false;
+  }
+
+  return leftKeys.every((key) => left[key] === right[key]);
+}
+
+
 async function loadSettings(): Promise<Settings> {
   const [syncData, localData] = await Promise.all([
     chrome.storage.sync.get(GLOBAL_DEFAULTS),
@@ -36,12 +48,30 @@ async function loadSettings(): Promise<Settings> {
 
 async function saveSettings(settings: Settings): Promise<void> {
   const sanitized = sanitizeSettings(settings);
-  settingsCache = sanitized;
   const { siteOverrides, siteSnoozes, ...globalPrefs } = sanitized;
-  await Promise.all([
-    chrome.storage.sync.set(globalPrefs),
-    chrome.storage.local.set({ siteOverrides, siteSnoozes })
-  ]);
+  const globalChanged =
+    sanitized.enabled !== settingsCache.enabled ||
+    sanitized.sensitivity !== settingsCache.sensitivity ||
+    sanitized.showMarkers !== settingsCache.showMarkers ||
+    sanitized.modelMode !== settingsCache.modelMode;
+  const localChanged =
+    !recordsEqual(siteOverrides, settingsCache.siteOverrides) ||
+    !recordsEqual(siteSnoozes, settingsCache.siteSnoozes);
+
+  const writes: Array<Promise<void>> = [];
+  if (globalChanged) {
+    writes.push(chrome.storage.sync.set(globalPrefs));
+  }
+
+  if (localChanged) {
+    writes.push(chrome.storage.local.set({ siteOverrides, siteSnoozes }));
+  }
+
+  if (writes.length > 0) {
+    await Promise.all(writes);
+  }
+
+  settingsCache = sanitized;
 }
 
 async function hasOffscreenDocument(): Promise<boolean> {
@@ -132,23 +162,32 @@ async function updateBadge(tabId: number, count: number): Promise<void> {
 }
 
 async function migratePerSiteDataFromSync(): Promise<void> {
-  const synced = await chrome.storage.sync.get(["siteOverrides", "siteSnoozes"]);
+  const [synced, localData] = await Promise.all([
+    chrome.storage.sync.get(["siteOverrides", "siteSnoozes"]),
+    chrome.storage.local.get(LOCAL_DEFAULTS)
+  ]);
   const hasSiteOverrides = Object.prototype.hasOwnProperty.call(synced, "siteOverrides");
   const hasSiteSnoozes = Object.prototype.hasOwnProperty.call(synced, "siteSnoozes");
   if (!hasSiteOverrides && !hasSiteSnoozes) {
     return;
   }
 
-  const toLocal: Record<string, unknown> = {};
-  if (hasSiteOverrides && typeof synced.siteOverrides !== "undefined") {
-    toLocal.siteOverrides = synced.siteOverrides;
-  }
-  if (hasSiteSnoozes && typeof synced.siteSnoozes !== "undefined") {
-    toLocal.siteSnoozes = synced.siteSnoozes;
-  }
+  const legacyPerSite = sanitizeSettings({
+    siteOverrides: hasSiteOverrides ? synced.siteOverrides : undefined,
+    siteSnoozes: hasSiteSnoozes ? synced.siteSnoozes : undefined
+  });
+  const existingPerSite = sanitizeSettings({
+    siteOverrides: localData.siteOverrides,
+    siteSnoozes: localData.siteSnoozes
+  });
 
-  if (Object.keys(toLocal).length > 0) {
-    await chrome.storage.local.set(toLocal);
+  const mergedPerSite = {
+    siteOverrides: { ...legacyPerSite.siteOverrides, ...existingPerSite.siteOverrides },
+    siteSnoozes: { ...legacyPerSite.siteSnoozes, ...existingPerSite.siteSnoozes }
+  };
+
+  if (Object.keys(mergedPerSite.siteOverrides).length > 0 || Object.keys(mergedPerSite.siteSnoozes).length > 0) {
+    await chrome.storage.local.set(mergedPerSite);
   }
   await chrome.storage.sync.remove(["siteOverrides", "siteSnoozes"]);
 }
@@ -184,7 +223,7 @@ chrome.runtime.onMessage.addListener((message: Message | OffscreenClassifyMessag
         return;
       }
       case "GET_POPUP_STATE": {
-        sendResponse({ settings: getEffectiveSettings(currentSettings, sanitizeHostnameInput(message.hostname)) });
+        sendResponse({ settings: getPopupState(currentSettings, sanitizeHostnameInput(message.hostname)) });
         return;
       }
       case "CLASSIFY_TEXT_BATCH": {
